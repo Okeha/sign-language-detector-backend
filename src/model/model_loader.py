@@ -136,7 +136,7 @@ class VLMModelLoader():
                 return_dict =True,
                 tokenize= True,
                 add_generation_prompt = True,
-                num_frames=16
+                num_frames=8
             ).to(self.device, dtype=torch.float16)
 
             generation_config ={
