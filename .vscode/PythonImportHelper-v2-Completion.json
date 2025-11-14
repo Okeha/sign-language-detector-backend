@@ -1,0 +1,105 @@
+[
+    {
+        "label": "os",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "os",
+        "description": "os",
+        "detail": "os",
+        "documentation": {}
+    },
+    {
+        "label": "yaml",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "yaml",
+        "description": "yaml",
+        "detail": "yaml",
+        "documentation": {}
+    },
+    {
+        "label": "time",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "time",
+        "description": "time",
+        "detail": "time",
+        "documentation": {}
+    },
+    {
+        "label": "load_dotenv",
+        "importPath": "dotenv",
+        "description": "dotenv",
+        "isExtraImport": true,
+        "detail": "dotenv",
+        "documentation": {}
+    },
+    {
+        "label": "AutoModelForImageTextToText",
+        "importPath": "transformers",
+        "description": "transformers",
+        "isExtraImport": true,
+        "detail": "transformers",
+        "documentation": {}
+    },
+    {
+        "label": "AutoProcessor",
+        "importPath": "transformers",
+        "description": "transformers",
+        "isExtraImport": true,
+        "detail": "transformers",
+        "documentation": {}
+    },
+    {
+        "label": "BitsAndBytesConfig",
+        "importPath": "transformers",
+        "description": "transformers",
+        "isExtraImport": true,
+        "detail": "transformers",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "VLMModelLoader",
+        "kind": 6,
+        "importPath": "src.model.model_loader",
+        "description": "src.model.model_loader",
+        "peekOfCode": "class VLMModelLoader():\n    def __init__(self):\n        print(\"\\n\\n📍 Initializing VLMModelLoader...\")\n        self.model_name = CONFIG[\"model\"]\n        self.model=None\n        self.processor=None\n        self.prompt = CONFIG[\"prompt\"]\n        self.device = \"cpu\"\n        self.load_model()\n    def load_model(self):",
+        "detail": "src.model.model_loader",
+        "documentation": {}
+    },
+    {
+        "label": "CONFIG",
+        "kind": 5,
+        "importPath": "src.model.model_loader",
+        "description": "src.model.model_loader",
+        "peekOfCode": "CONFIG = None\n# The 'with' statement is the best way to handle opening/closing files\nwith open('params/vlm.yml', 'r') as file:\n    # Use yaml.safe_load() to parse the file\n    # This converts the YAML into a Python dictionary (or list)\n    try:\n        CONFIG = yaml.safe_load(file)\n    except yaml.YAMLError as e:\n        print(f\"Error parsing YAML file: {e}\")\n# print(CONFIG[\"model\"])",
+        "detail": "src.model.model_loader",
+        "documentation": {}
+    },
+    {
+        "label": "HF_TOKEN",
+        "kind": 5,
+        "importPath": "src.model.model_loader",
+        "description": "src.model.model_loader",
+        "peekOfCode": "HF_TOKEN = os.getenv('HF_TOKEN')\nclass VLMModelLoader():\n    def __init__(self):\n        print(\"\\n\\n📍 Initializing VLMModelLoader...\")\n        self.model_name = CONFIG[\"model\"]\n        self.model=None\n        self.processor=None\n        self.prompt = CONFIG[\"prompt\"]\n        self.device = \"cpu\"\n        self.load_model()",
+        "detail": "src.model.model_loader",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "main",
+        "description": "main",
+        "peekOfCode": "def main():\n    print(\"Hello from backend!\")\nif __name__ == \"__main__\":\n    main()",
+        "detail": "main",
+        "documentation": {}
+    }
+]
