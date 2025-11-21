@@ -178,6 +178,8 @@ class VLMModelLoader():
     pass
 
 
+
+
 if __name__ == "__main__":
     vlm_loader = VLMModelLoader()
     vlm_loader.generate_response("/mnt/c/Users/aokeh/Documents/projects/personal/signLanguage/backend/sign-language-detector-backend/src/model/tests/data/videos/test2.mp4")
