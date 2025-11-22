@@ -11,41 +11,50 @@ This project aims to bridge communication gaps by providing an intelligent syste
 - **Real-time Sign Language Detection**: Process video streams and static images
 - **Vision-Language Model Integration**: Powered by InternVL3-2B for accurate interpretation
 - **Multi-Hardware Support**: Optimized for NVIDIA CUDA, AMD DirectML, and CPU
-- **Quantization Support**: 4-bit quantization for efficient inference
-- **WebSocket Integration**: Real-time bidirectional communication
-- **REST API**: Standard HTTP endpoints for batch processing
-- **Fine-tuning Capabilities**: Custom model adaptation for specific sign language dialects
+- **Fine-tuning Pipeline**: Complete SFT training with PEFT/LoRA for efficient adaptation
+- **Custom Data Collation**: Video frame sampling with proper label masking for causal LM
+- **Stratified Dataset Splitting**: Gloss-aware train/test splits ensuring balanced representation
+- **Quantization Support**: 4-bit quantization for efficient inference (CUDA only)
+- **Automated Video Processing**: Frame extraction and preprocessing with Decord
 
 ## 🏗️ Architecture
 
 ```
 sign-language-detector-backend/
 ├── src/
+│   ├── __init__.py                # Package marker
 │   ├── model/                     # VLM Model Components
+│   │   ├── __init__.py            # Package marker
 │   │   ├── model_loader.py        # InternVL3 model loader and inference
 │   │   ├── params/                # Model configuration
 │   │   │   └── vlm.yml            # VLM parameters and prompts
-│   │   ├── finetune/              # Fine-tuning pipeline
+│   │   ├── finetune/              # Fine-tuning pipeline (MAIN TRAINING PIPELINE)
+│   │   │   ├── __init__.py        # Package marker
 │   │   │   ├── data_engineering/  # Dataset processing
+│   │   │   │   ├── __init__.py    # Package marker
 │   │   │   │   ├── video_downloader.py     # YouTube video downloader
 │   │   │   │   ├── filter_data.py          # WLASL data filtering
-│   │   │   │   ├── dataset_loader.py       # Dataset loading utilities
 │   │   │   │   ├── raw_videos/             # Downloaded video files
-│   │   │   │   └── datasets/               # Processed datasets
-│   │   │   ├── dataset.py         # Dataset classes for training
-│   │   │   ├── train.py           # Fine-tuning script
-│   │   │   └── eval.py            # Model evaluation
+│   │   │   │   └── datasets/               # Processed datasets (JSON)
+│   │   │   ├── dataset.py         # Dataset loader with stratified split
+│   │   │   ├── train.py           # Fine-tuning orchestrator
+│   │   │   └── eval.py            # Model evaluation (planned)
 │   │   └── tests/                 # Test data and validation
 │   │       └── data/
 │   │           ├── images/        # Test images
 │   │           └── videos/        # Test videos
-│   ├── train/                     # Training pipeline
-│   │   └── train.py               # Main training orchestrator
 │   └── api/                       # REST API endpoints (planned)
 ├── main.py                        # Application entry point
 ├── pyproject.toml                 # UV package dependencies
 └── README.md                      # This file
 ```
+
+### Package Structure Notes
+
+- All directories have `__init__.py` files for proper Python package imports
+- Use **relative imports** throughout the codebase
+- Run modules from the `src/` package root: `python -m model.finetune.train`
+- The `finetune/` directory is the **canonical training pipeline** (no duplicate train folders)
 
 ## 🚀 Development Stages
 
@@ -65,9 +74,14 @@ sign-language-detector-backend/
 - [x] YouTube video downloader for dataset collection
 - [x] Data filtering and preprocessing pipeline
 - [x] Dataset generation for fine-tuning (320-word glossary)
-- [] Fine-tuning infrastructure with SFT (Supervised Fine-Tuning)
-- [] Training pipeline with proper configuration
-- [] Model evaluation framework
+- [x] Dataset loader with gloss-aware stratified train/test split
+- [x] Training pipeline structure with SFT configuration
+- [x] Package structure with proper `__init__.py` files and relative imports
+- [x] **Custom video collation function with frame sampling**
+- [x] **Label masking implementation (prompt tokens = -100, answer tokens = target)**
+- [x] **PEFT/LoRA integration for efficient fine-tuning**
+- [x] **Complete training loop with Hugging Face Trainer**
+- [x] Hardware-specific optimizations (fp16 for CUDA, float32 for DirectML)
 
 ### Stage 3: API Development 📋 (Planned)
 
@@ -99,9 +113,9 @@ sign-language-detector-backend/
 ### Dataset & Processing
 
 - **WLASL Dataset**: Word-Level American Sign Language dataset
-- **YouTube-DL**: Video downloading from YouTube
-- **AV (PyAV)**: Video processing and frame extraction
+- **Decord**: High-performance video frame extraction and sampling
 - **Custom Data Pipeline**: Filtering and preprocessing for 320-word glossary
+- **Stratified Splitting**: Gloss-aware train/test splits for balanced evaluation
 
 ### Hardware Acceleration
 
@@ -222,20 +236,14 @@ This will:
 #### Step 3: Run Fine-tuning
 
 ```bash
-# Navigate to training directory
-cd ../../../train
+# Navigate to src package root
+cd C:\Users\okeha\Documents\projects\personal\signlanguagedetector\backend\src
 
-# Start fine-tuning process
-python train.py
+# Run training as a module (proper way with relative imports)
+python -m model.finetune.train
 ```
 
-Or run the fine-tuning pipeline directly:
-
-```bash
-# From finetune directory
-cd src/model/finetune
-python train.py
-```
+**Important**: Always run from the `src/` directory using the `-m` flag to ensure relative imports work correctly.
 
 #### Dataset Structure
 
@@ -281,24 +289,37 @@ prompt: You are a sign language interpreter. Given the video input, provide a co
 
 #### Fine-tuning Configuration
 
-The fine-tuning process uses SFT (Supervised Fine-Tuning) with these configurable parameters in `src/train/train.py`:
+The fine-tuning process uses PEFT with LoRA and custom data collation:
 
 ```python
-training_config = SFTConfig(
-    max_length=None,
-    output_dir="./results",
-    num_train_epochs=1,
-    per_device_train_batch_size=1,
-    gradient_accumulation_steps=4,
-    warmup_steps=10,
-    learning_rate=5e-5,
-    fp16=False,
-    bf16=False,
-    logging_steps=10,
-    optim="adamw_torch",
-    save_strategy="epoch",
-    evaluation_strategy="no",
+# PEFT/LoRA Configuration
+peft_config = LoraConfig(
+    r=128,                          # LoRA rank
+    lora_alpha=256,                 # LoRA scaling
+    target_modules=[".*language_model.*attn.*"],  # Target attention layers
+    lora_dropout=0.05,
+    bias="none",
+    task_type="CAUSAL_LM",
 )
+
+# Training Arguments
+training_args = TrainingArguments(
+    output_dir="./vlm_finetuned",
+    per_device_train_batch_size=1,
+    per_device_eval_batch_size=1,
+    num_train_epochs=1,
+    gradient_accumulation_steps=4,
+    fp16=(device_type == "cuda"),   # fp16 only for CUDA
+    logging_steps=10,
+    save_strategy="epoch",
+    remove_unused_columns=False,     # Keep all dataset fields
+    optim="adamw_torch",
+)
+
+# Custom data collator handles:
+# - Video frame sampling (8 frames by default)
+# - Processor formatting with <video> placeholder
+# - Label masking (prompt=-100, answer=token_ids)
 ```
 
 ## 🔧 Hardware Requirements
@@ -340,20 +361,20 @@ src/model/finetune/data_engineering/
 
 ```bash
 # Test model loading and inference
-cd src/model
-python model_loader.py
+cd src
+python -m model.model_loader
 
 # Test data processing pipeline
-cd finetune/data_engineering
+cd model/finetune/data_engineering
 python filter_data.py
 
-# Test fine-tuning pipeline
-cd ../../train
-python train.py
+# Test dataset loader with stratified split
+cd ../../../src
+python -c "from model.finetune.dataset import DatasetLoader; dl = DatasetLoader(); dl._train_test_split()"
 
-# Test dataset preprocessing
-cd ../model/finetune/data_engineering
-python -c "from filter_data import DataCleaner; DataCleaner()"
+# Test fine-tuning pipeline (once preprocessing is complete)
+cd src
+python -m model.finetune.train
 ```
 
 ## 🤝 Contributing
@@ -420,11 +441,11 @@ flake8 src/
 
 ### Short-term Goals
 
+- Model evaluation and inference pipeline for trained checkpoints
+- Hyperparameter optimization and experiment tracking
 - REST API implementation with FastAPI
 - WebSocket support for real-time processing
-- Model evaluation metrics and validation
-- Advanced data augmentation techniques
-- Multi-GPU training support
+- Model serving and deployment infrastructure
 
 ### Long-term Vision
 
