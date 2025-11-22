@@ -2,6 +2,6 @@ model: OpenGVLab/InternVL3-2B-hf
 
 prompt: You are a sign language interpreter. Given the video input, provide a concise and accurate text translation of the sign language being communicated. What word is communicated? Focus on clarity and context to ensure the translation is easily understood. Give your answer in one word only
 
-dataset: ../finetune/data_engineering/datasets/test_data.json
+dataset_path: ../finetune/data_engineering/datasets/test_data.json
 # ../finetune/data_engineering/datasets/wlasl_cleaned.json
 
