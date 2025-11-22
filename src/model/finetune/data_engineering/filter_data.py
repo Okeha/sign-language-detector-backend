@@ -97,6 +97,25 @@ with open("../raw_data/wlasl.json", "r") as file:
 
 class DataCleaner():
     def __init__(self, verbose=True):
+        """
+        Initialize the DataCleaner to process WLASL dataset for sign language recognition.
+        
+        This class filters the WLASL dataset based on a 320-word glossary, checks for
+        downloaded videos, and generates a training dataset in the required format.
+        
+        Args:
+            verbose (bool, optional): Enable verbose logging during processing. Defaults to True.
+            
+        Attributes:
+            verbose (bool): Logging flag
+            dataset (list): Final processed dataset entries
+            glossary (list): 320-word sign language glossary
+            raw_data (list): Original WLASL dataset
+            clean_data (list): Glossary-filtered data
+            glossary_clean_data (list): Alias for clean_data
+            number_of_videos (int): Count of available video files
+            download_video_clean_data (list): Data filtered by available videos
+        """
         self.verbose = verbose
         self.dataset = []
         if self.verbose:
@@ -145,6 +164,16 @@ class DataCleaner():
         pass
 
     def _filter_data_by_glossary(self):
+        """
+        Filter the raw WLASL dataset to include only words present in the 320-word glossary.
+        
+        This method iterates through the raw WLASL data and keeps only entries where
+        the 'gloss' (sign language word) is found in the predefined glossary list.
+        The filtering is case-insensitive (converts gloss to uppercase).
+        
+        Side Effects:
+            Updates self.clean_data with filtered entries
+        """
         for gloss in self.raw_data:
             if gloss["gloss"].upper() in self.glossary:
                 self.clean_data.append(gloss)
@@ -152,9 +181,31 @@ class DataCleaner():
         pass
 
     def get_clean_data(self):
+        """
+        Get the glossary-filtered dataset.
+        
+        Returns:
+            list: Dataset entries that match the 320-word glossary. Each entry contains
+                  'gloss' and 'instances' keys with sign language word and video metadata.
+        """
         return self.clean_data
 
     def _filter_downloaded_videos_from_clean_dataset(self):
+        """
+        Filter the glossary-cleaned dataset to include only entries with downloaded videos.
+        
+        This method checks the 'raw_videos/' directory for actual video files (.mp4 or .swf)
+        corresponding to each video_id in the dataset instances. Only entries with existing
+        video files are included in the final filtered dataset.
+        
+        Returns:
+            list: Filtered dataset containing only entries with available video files.
+                  Each entry has the structure:
+                  {
+                      'gloss': str,           # Sign language word
+                      'instances': list       # List of video instances with existing files
+                  }
+        """
         # return a clean_data list that only contains entries with downloaded videos
         filtered_data = []
 
@@ -213,10 +264,37 @@ class DataCleaner():
         return video_count
 
     def get_updated_glossary(self):
+        """
+        Get the final glossary of words that have both glossary match and downloaded videos.
+        
+        This method extracts and prints the list of sign language words (glosses) that
+        passed both the glossary filtering and video availability checks.
+        
+        Returns:
+            list: List of sign language words (strings) that have available training videos.
+        """
         print([entry['gloss'] for entry in self.download_video_clean_data])
         return [entry['gloss'] for entry in self.download_video_clean_data]
 
     def _generate_dataset(self):
+        """
+        Generate the final training dataset in the format required for fine-tuning.
+        
+        This method processes the video-filtered data and creates training examples
+        with a standardized prompt, video path, and target gloss. Each video instance
+        becomes a separate training example.
+        
+        Dataset Format:
+            Each entry contains:
+            {
+                "prompt": str,        # Instruction prompt for the model
+                "video_path": str,    # Relative path to video file
+                "gloss": str          # Target sign language word
+            }
+            
+        Side Effects:
+            Populates self.dataset with training examples
+        """
         # generate dataset in this format {prompt, video_path, gloss}
         for entry in self.download_video_clean_data:
             gloss = entry['gloss']
@@ -247,6 +325,20 @@ class DataCleaner():
         pass
     
     def save_clean_data_to_json(self, output_file="wlasl_cleaned.json"):
+        """
+        Save the processed dataset to a JSON file for training.
+        
+        Creates the 'datasets/' directory if it doesn't exist and saves the
+        generated training dataset in JSON format with proper indentation.
+        
+        Args:
+            output_file (str, optional): Name of the output JSON file. 
+                                       Defaults to "wlasl_cleaned.json".
+                                       
+        Side Effects:
+            Creates 'datasets/' directory if needed
+            Writes self.dataset to 'datasets/{output_file}'
+        """
         # Create datasets directory if it doesn't exist
         datasets_dir = Path("datasets")
         datasets_dir.mkdir(exist_ok=True)
